@@ -1,0 +1,43 @@
+[Unit]
+{% if docker_compose_service_description | default('', true) | length > 0 %}
+Description={{ docker_compose_service_description }}
+{% else %}
+Description=docker-compose {{ docker_compose_service_name }} service
+{% endif %}
+Requires=docker.service network-online.target
+{%- for requires in docker_compose_service_requires %}
+ {{ requires }}
+{%- endfor %}
+
+After=docker.service network-online.target
+{%- for after in docker_compose_service_after %}
+ {{ after }}
+{%- endfor %}
+
+{% if docker_compose_service_auto_restart | default(false) | bool %}
+StartLimitIntervalSec=5min
+StartLimitBurst=10
+{% endif %}
+
+[Service]
+WorkingDirectory={{ docker_compose_service_folder }}
+Type=simple
+TimeoutStartSec=15min
+{% if docker_compose_service_auto_restart | default(false) | bool %}
+
+Restart=always
+RestartSec=5sec
+{% endif %}
+
+ExecStartPre=/usr/bin/docker-compose pull --quiet --ignore-pull-failures
+ExecStartPre=/usr/bin/docker-compose build --pull
+
+ExecStart=/usr/bin/docker-compose up --remove-orphans
+
+ExecStop=/usr/bin/docker-compose down --remove-orphans
+
+ExecReload=/usr/bin/docker-compose pull --quiet --ignore-pull-failures
+ExecReload=/usr/bin/docker-compose build --pull
+
+[Install]
+WantedBy=multi-user.target

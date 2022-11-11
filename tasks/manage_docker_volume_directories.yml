@@ -1,0 +1,15 @@
+---
+
+- name: "Prepare directories in docker volume for '{{ docker_compose_service_name }}'"
+  when: (docker_volume_directories | default([], true)) | length > 0
+  become: true
+  file:
+    path: "{{ docker_volume_path }}/{{ directory.path }}"
+    state: directory
+    recurse: true
+    owner: "{{ directory.owner | default(docker_volume_default_owner) | default(omit) }}"
+    group: "{{ directory.group | default(docker_volume_default_group) | default(omit) }}"
+    mode: "{{ directory.mode | default(docker_volume_default_mode) | default(omit) }}"
+  with_items: "{{ docker_volume_directories }}"
+  loop_control:
+    loop_var: directory

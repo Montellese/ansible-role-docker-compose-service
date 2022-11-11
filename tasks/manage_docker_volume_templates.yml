@@ -1,0 +1,13 @@
+---
+
+- name: "Prepare templated files in docker volume for '{{ docker_compose_service_name }}'"
+  when: (docker_volume_templates | default([], true)) | length > 0
+  become: true
+  template:
+    src: "{{ template.src }}"
+    dest: "{{ docker_volume_path }}/{{ template.dest }}"
+    mode: "{{ template.mode | default(omit) }}"
+    force: "{{ template.force | default(omit) }}"
+  with_items: "{{ docker_volume_templates }}"
+  loop_control:
+    loop_var: template

@@ -1,0 +1,27 @@
+---
+
+- name: "Prepare local folder '{{ local.name }}' for docker volume for '{{ docker_compose_service_name }}'"
+  when: (local.name | default('', true)) | length > 0
+  become: true
+  file:
+    path: "{{ docker_compose_service_folder }}/{{ local.name }}"
+    state: directory
+    recurse: true
+
+- include_tasks: tasks/manage_docker_volume_directories.yml
+  when: (local.directories | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ docker_compose_service_folder }}/{{ local.name | default('', true) }}"
+    docker_volume_directories: "{{ local.directories }}"
+
+- include_tasks: tasks/manage_docker_volume_files.yml
+  when: (local.files | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ docker_compose_service_folder }}/{{ local.name | default('', true) }}"
+    docker_volume_files: "{{ local.files }}"
+
+- include_tasks: tasks/manage_docker_volume_templates.yml
+  when: (local.templates | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ docker_compose_service_folder }}/{{ local.name | default('', true) }}"
+    docker_volume_templates: "{{ local.templates }}"

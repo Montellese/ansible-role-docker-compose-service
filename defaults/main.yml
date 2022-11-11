@@ -1,0 +1,38 @@
+---
+
+# to provide
+docker_compose_service_name: "{{ undef(hint='You must specify a service name') }}"
+docker_compose_service_enabled: true
+docker_compose_service_description:
+docker_compose_service_requires: []
+docker_compose_service_after: []
+docker_compose_service_auto_restart: false
+
+docker_compose_template: "templates/docker-compose.yml"
+docker_compose_volumes:
+#  zfs:
+#    pool_name: "tank"
+#    default_owner: "root"
+#    default_group: "root"
+#    default_mode: "0755"
+#    datasets: []
+#  local:
+#    - name: "local_config"
+#      directories:
+#        - path: "config"
+#          user: "root"
+#          group": "root"
+#          mode: "0755"
+#      templates:
+#        - src: "templates/local.conf.j2"
+#          dest: "config/local.conf"
+#          mode: "0755"
+#          force: true
+docker_compose_secrets: []
+#  - name: "mysecret"
+#    data: "topsecret"
+#    mode: "0600"
+
+# fixed
+docker_compose_service_folder: "{{ docker_compose_folder }}/{{ docker_compose_service_name }}"
+docker_compose_file_path: "{{ docker_compose_service_folder }}/docker-compose.yml"

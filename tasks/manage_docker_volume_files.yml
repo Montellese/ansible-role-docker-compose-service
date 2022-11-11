@@ -1,0 +1,14 @@
+---
+
+- name: "Prepare files in docker volume for '{{ docker_compose_service_name }}'"
+  when: (docker_volume_files | default([], true)) | length > 0
+  become: true
+  copy:
+    src: "{{ file.src }}"
+    dest: "{{ docker_volume_path }}/{{ file.dest }}"
+    mode: "{{ file.mode | default(omit) }}"
+    force: "{{ file.force | default(omit) }}"
+    remote_src: "{{ file.remote_src | default(omit) }}"
+  with_items: "{{ docker_volume_files }}"
+  loop_control:
+    loop_var: file

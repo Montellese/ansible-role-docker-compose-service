@@ -1,0 +1,69 @@
+---
+
+- name: "Create service folder"
+  become: true
+  file:
+    path: "{{ docker_compose_service_folder }}"
+    state: directory
+    recurse: true
+
+- name: "Manage docker volumes using ZFS datasets for '{{ docker_compose_service_name }}'"
+  include_tasks: tasks/manage_zfs_docker_volumes.yml
+  when: >
+        docker_compose_volumes is defined and
+        docker_compose_volumes.zfs is defined
+  vars:
+    zfs: "{{ docker_compose_volumes.zfs }}"
+
+- name: "Manage docker volumes using local directories for '{{ docker_compose_service_name }}'"
+  include_tasks: tasks/manage_local_docker_volume.yml
+  when: >
+        docker_compose_volumes is defined and
+        (docker_compose_volumes.local | default([])) | length > 0
+  with_items: "{{ docker_compose_volumes.local }}"
+  loop_control:
+    loop_var: local
+
+- name: "Manage {{ docker_compose_secrets | default([], true) | length }} docker secrets
+    for '{{ docker_compose_service_name }}'"
+  include_tasks: tasks/manage_docker_secret.yml
+  when: docker_compose_secrets | default([]) | length > 0
+  no_log: true
+  with_items: "{{ docker_compose_secrets }}"
+  loop_control:
+    loop_var: docker_secret
+
+- name: "Create docker-compose.yml file for '{{ docker_compose_service_name }}'"
+  become: true
+  template:
+    src: "{{ docker_compose_template }}"
+    dest: "{{ docker_compose_file_path }}"
+    mode: "0644"
+  register: docker_compose_file
+
+- name: "Create systemd service file for '{{ docker_compose_service_name }}'"
+  become: true
+  template:
+    src: "{{ docker_compose_service_template }}"
+    dest: "{{ systemd_folder }}/{{ docker_compose_service_name }}.service"
+    mode: "0644"
+  register: docker_compose_service_file
+
+- name: "Start '{{ docker_compose_service_name }}'"
+  when: docker_compose_service_enabled
+  become: true
+  systemd:
+    name: "{{ docker_compose_service_name }}"
+    enabled: true
+    state: started
+  register: docker_compose_start
+
+- name: "Restart '{{ docker_compose_service_name }}'"
+  when: >
+        docker_compose_service_enabled and
+        (docker_compose_service_file.changed or docker_compose_file.changed) and
+        not docker_compose_start.changed
+  become: true
+  systemd:
+    name: "{{ docker_compose_service_name }}"
+    state: restarted

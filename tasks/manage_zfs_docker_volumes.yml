@@ -1,0 +1,54 @@
+---
+
+- name: "docker-compose-service : Prepare ZFS dataset as docker volume for '{{ docker_compose_service_name }}'"
+  when: >
+        zfs is defined and
+        (zfs.pool_name | default('', true)) | length > 0 and
+        (zfs.datasets | default([], true)) | length > 0
+  include_role:
+    name: zfs-dataset
+  vars:
+    zfs_pool_name: "{{ zfs.pool_name }}"
+    zfs_default_owner: "{{ zfs.default_owner | default(omit) }}"
+    zfs_default_group: "{{ zfs.default_group | default(omit) }}"
+    zfs_default_mode: "{{ zfs.default_mode | default(omit) }}"
+    zfs_datasets: "{{ zfs.datasets }}"
+
+- include_tasks: tasks/manage_docker_volume_directories.yml
+  when: >
+        zfs is defined and
+        (zfs.pool_name | default('', true)) | length > 0 and
+        (dataset.directories | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ zfs_mount_dir }}/{{ zfs.pool_name }}/{{ dataset.name }}"
+    docker_volume_default_owner: "{{ zfs.default_owner | default(omit) }}"
+    docker_volume_default_group: "{{ zfs.default_group | default(omit) }}"
+    docker_volume_default_mode: "{{ zfs.default_mode | default(omit) }}"
+    docker_volume_directories: "{{ dataset.directories }}"
+  with_items: "{{ zfs.datasets }}"
+  loop_control:
+    loop_var: dataset
+
+- include_tasks: tasks/manage_docker_volume_files.yml
+  when: >
+        zfs is defined and
+        (zfs.pool_name | default('', true)) | length > 0 and
+        (dataset.files | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ zfs_mount_dir }}/{{ zfs.pool_name }}/{{ dataset.name }}"
+    docker_volume_files: "{{ dataset.files }}"
+  with_items: "{{ zfs.datasets }}"
+  loop_control:
+    loop_var: dataset
+
+- include_tasks: tasks/manage_docker_volume_templates.yml
+  when: >
+        zfs is defined and
+        (zfs.pool_name | default('', true)) | length > 0 and
+        (dataset.templates | default([], true)) | length > 0
+  vars:
+    docker_volume_path: "{{ zfs_mount_dir }}/{{ zfs.pool_name }}/{{ dataset.name }}"
+    docker_volume_templates: "{{ dataset.templates }}"
+  with_items: "{{ zfs.datasets }}"
+  loop_control:
+    loop_var: dataset
