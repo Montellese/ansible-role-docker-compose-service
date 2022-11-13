@@ -1,0 +1,43 @@
+[Unit]
+{% if docker_compose_service_systemd_description | default('', true) | length > 0 %}
+Description={{ docker_compose_service_systemd_description }}
+{% else %}
+Description=Docker Compose {{ docker_compose_service_name }} service
+{% endif %}
+Requires=docker.service network-online.target
+{%- for requires in docker_compose_service_systemd_requires %}
+ {{ requires }}
+{%- endfor %}
+
+After=docker.service network-online.target
+{%- for after in docker_compose_service_systemd_after %}
+ {{ after }}
+{%- endfor %}
+
+{% if docker_compose_service_systemd_auto_restart | bool %}
+StartLimitIntervalSec=5min
+StartLimitBurst=10
+{% endif %}
+
+[Service]
+WorkingDirectory={{ docker_compose_service_path }}
+Type=simple
+TimeoutStartSec=15min
+{% if docker_compose_service_systemd_auto_restart | bool %}
+
+Restart=always
+RestartSec=5sec
+{% endif %}
+
+ExecStartPre={{ docker_compose_service_compose_command }} pull --quiet --ignore-pull-failures
+ExecStartPre={{ docker_compose_service_compose_command }} build --pull
+
+ExecStart={{ docker_compose_service_compose_command }} up --remove-orphans
+
+ExecStop={{ docker_compose_service_compose_command }} down --remove-orphans
+
+ExecReload={{ docker_compose_service_compose_command }} pull --quiet --ignore-pull-failures
+ExecReload={{ docker_compose_service_compose_command }} build --pull
+
+[Install]
+WantedBy=multi-user.target

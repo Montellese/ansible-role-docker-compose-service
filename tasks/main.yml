@@ -1,0 +1,42 @@
+---
+
+- name: "Prepare environment for '{{ docker_compose_service_name }}'"
+  set_fact:
+    docker_compose_service_path: "{{ docker_compose_service_base_path }}/{{ docker_compose_service_name }}"
+
+- name: "Create base directory for '{{ docker_compose_service_name }}'"
+  file:
+    path: "{{ docker_compose_service_base_path }}"
+    state: directory
+    recurse: true
+
+- name: "Create docker-compose.yml file for '{{ docker_compose_service_name }}'"
+  template:
+    src: "{{ docker_compose_service_template }}"
+    dest: "{{ docker_compose_service_path }}/docker-compose.yml"
+    mode: "0644"
+  register: docker_compose_service_file
+
+- name: "Create systemd service file for '{{ docker_compose_service_name }}'"
+  template:
+    src: "templates/docker-compose.service.j2"
+    dest: "{{ docker_compose_service_systemd_path }}/{{ docker_compose_service_name }}.service"
+    mode: "0644"
+  register: docker_compose_service_systemd_file
+
+- name: "Enable and start '{{ docker_compose_service_name }}'"
+  when: docker_compose_service_systemd_enabled | bool
+  systemd:
+    name: "{{ docker_compose_service_name }}"
+    enabled: true
+    state: started
+  register: docker_compose_service_started
+
+- name: "Restart '{{ docker_compose_service_name }}' (if changed)"
+  when: >
+        docker_compose_service_systemd_enabled | bool and
+        (docker_compose_service_file.changed or docker_compose_service_systemd_file.changed) and
+        not docker_compose_service_started.changed
+  systemd:
+    name: "{{ docker_compose_service_name }}"
+    state: restarted

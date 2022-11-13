@@ -1,0 +1,25 @@
+---
+
+# Name of the docker compose service
+docker_compose_service_name: "{{ undef(hint='You must specify a service name') }}"
+# Path to the docker-compose.yml template file
+docker_compose_service_template: templates/docker-compose.yml.j2
+
+# Path to the directory where the docker compose service directory is created
+docker_compose_service_base_path: /etc/docker-compose
+
+# Path to the directory where the systemd service file is stored
+docker_compose_service_systemd_path: /etc/systemd/system
+# Whether the docker compose systemd service should be enabled or not
+docker_compose_service_systemd_enabled: true
+# Systemd service description
+docker_compose_service_systemd_description:
+# Systemd service Requires property
+docker_compose_service_systemd_requires: []
+# Systemd service After property
+docker_compose_service_systemd_after: []
+# Whether to automatically restart the systemd service or not
+docker_compose_service_systemd_auto_restart: false
+
+# Docker Compose executable / command
+docker_compose_service_compose_command: /usr/bin/docker-compose
